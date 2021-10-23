@@ -21,6 +21,10 @@
 #define Tx_FIFO_RST (1<<2)
 #define DLAB_BIT    (1<<7)
 #define 1_STOP_BIT  (1<<0)
+#define RDR (1<<0)  //Receiver Data Ready
+#define THRE (1<<5) //Transmit Holding Register Empty
+#define LINE_FEED   0x0A //LF, For Linux, MAC and Windows Terminals  
+#define CARRIAGE_RETURN 0x0D //CR, For Windows Terminals (CR+LF).
 #define NO_PARITY_BIT (1<<1)
 #define OUTPUT 		(uint32_t)	 1
 #define INPUT  		(uint32_t)	 0
@@ -41,17 +45,28 @@
 
 void config_GPIO(void); // Configura el pulsador usado para actualizar la hora y las interrupciones
 void config_timer0(void); // Configura el timer0 para matchear a los 2 minutos, en la interrupción se actualiza la hora.
-void config_UART3(void); // Configura la UART0
+void config_UART3(void); // Configura la UART3
 
 int main(void) {
 
 	SystemInit();
 	config_GPIO();
 	config_timer0(); // Configura timer0 para la hora en caso de que no se pulse P0.6 al cabo de 2 min
-	config_UART0(); // Configura la UART3
+	config_UART3(); // Configura la UART3
+
+	char msg[] = { 'H','e','l','l','o',' ','f','r','o','m',' ','L','P','C','1','7','6','8','\0' }; 
+	int count=0;
 
 	while(1){}
-	
+		while( msg[count]!='\0' )
+		{
+			U3Write(msg[count]);
+			count++;
+		}
+		//Send NEW Line Character(s) i.e. "\n"
+		U3Write(CARRIAGE_RETURN); //Comment this for Linux or MacOS
+		U3Write(LINE_FEED); //Windows uses CR+LF for newline.
+		count=0; // reset counter
 
 	}
 
