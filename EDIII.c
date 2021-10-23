@@ -57,6 +57,17 @@ int main(void) {
 
 	return 0;
 }
+void U3Write(char txData)
+{
+	while(!(LPC_UART3->LSR & THRE)); //wait until THR is empty
+	//now we can write to Tx FIFO
+	LPC_UART3->THR = txData;
+}
+char U3Read(void)
+{
+	while(!(LPC_UART3->LSR & RDR)); //wait until data arrives in Rx FIFO
+	return LPC_UART0->RBR;
+}
 
 void config_GPIO(){
 
