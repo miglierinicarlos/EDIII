@@ -51,6 +51,9 @@ int main(void) {
 	config_UART0(); // Configura la UART3
 
 	while(1){}
+	
+
+	}
 
 	return 0;
 }
@@ -102,7 +105,6 @@ void config_timer0(){
 	TIM_ResetCounter(LPC_TIM0); 		  // Reseteo el TC
 	TIM_Cmd(LPC_TIM0, ENABLE); 		  // Habilitar (Start/Stop) dispositivo Timer0
 	NVIC_Enable(TIMER0_IRQn);		  // Habilitar vector interrupción de timer0
-
 	return;
 }
 void config_UART3(){ // Configura la UART3
