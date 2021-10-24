@@ -20,7 +20,7 @@
 #define Rx_FIFO_RST (1<<1)
 #define Tx_FIFO_RST (1<<2)
 #define DLAB_BIT    (1<<7)
-#define 1_STOP_BIT  (1<<0)
+#define ONE_STOP_BIT  (1<<0)
 #define RDR (1<<0)  //Receiver Data Ready
 #define THRE (1<<5) //Transmit Holding Register Empty
 #define LINE_FEED   0x0A //LF, For Linux, MAC and Windows Terminals  
@@ -46,6 +46,8 @@
 void config_GPIO(void); // Configura el pulsador usado para actualizar la hora y las interrupciones
 void config_timer0(void); // Configura el timer0 para matchear a los 2 minutos, en la interrupción se actualiza la hora.
 void config_UART3(void); // Configura la UART3
+char U3Read(void); // Verifica que el buffer de lectura esté vacío, lee lo que recibe de la UART3 y lo devuelve como char
+void U3Write(char);// Verifica que el buffer de escritura esté vacío y escribe en la UART3 el char pasado como parámetro
 
 int main(void) {
 
@@ -54,17 +56,20 @@ int main(void) {
 	config_timer0(); // Configura timer0 para la hora en caso de que no se pulse P0.6 al cabo de 2 min
 	config_UART3(); // Configura la UART3
 
-	char msg[] = { 'H','e','l','l','o',' ','f','r','o','m',' ','L','P','C','1','7','6','8','\0' }; 
+	/* Este programa envia "Hello from LPC1769" repetidamente a través de la UART3, separado un envío de otro
+	* a través del corte de línea (enter)
+	*/
+	char msg[] = { 'H','e','l','l','o',' ','f','r','o','m',' ','L','P','C','1','7','6','9','\0' }; 
 	int count=0;
 
-	while(1){}
+	while(1){
 		while( msg[count]!='\0' )
 		{
 			U3Write(msg[count]);
 			count++;
 		}
 		//Send NEW Line Character(s) i.e. "\n"
-		U3Write(CARRIAGE_RETURN); //Comment this for Linux or MacOS
+		U3Write(CARRIAGE_RETURN);
 		U3Write(LINE_FEED); //Windows uses CR+LF for newline.
 		count=0; // reset counter
 
@@ -72,16 +77,16 @@ int main(void) {
 
 	return 0;
 }
-void U3Write(char txData)
+void U3Write(char txData) // Verifica que el registro para enviar esté vacío y luego manda el char pasado como parámetro
 {
 	while(!(LPC_UART3->LSR & THRE)); //wait until THR is empty
-	//now we can write to Tx FIFO
 	LPC_UART3->THR = txData;
+	return;
 }
 char U3Read(void)
 {
 	while(!(LPC_UART3->LSR & RDR)); //wait until data arrives in Rx FIFO
-	return LPC_UART0->RBR;
+	return LPC_UART3->RBR;
 }
 
 void config_GPIO(){
@@ -93,7 +98,7 @@ void config_GPIO(){
 	pin_configuration.Portnum	=   PINSEL_PORT_0;      // Seleccionar puerto 0
 	pin_configuration.Funcnum	=   PINSEL_FUNC_0;	// default function (GPIO) con pull-up activado
 	pin_configuration.Pinnum        =   PINSEL_PIN_6;	// Seleccionar pin 6
-	pin_configuration.OpenDrain     =   
+	pin_configuration.OpenDrain     =   PINSEL_PINMODE_NORMAL;
 	PINSEL_ConfigPin(&pin_configuration);
 	GPIO_SetDir(PORT_ZERO, PIN_6, INPUT); // Seteo puerto P0.6 como entrada
 
@@ -130,7 +135,7 @@ void config_timer0(){
 	TIM_ConfigMatch(LPC_TIM0, &timer0_match); // Carga la configuracion del timer0 para operar en modo match0.0
 	TIM_ResetCounter(LPC_TIM0); 		  // Reseteo el TC
 	TIM_Cmd(LPC_TIM0, ENABLE); 		  // Habilitar (Start/Stop) dispositivo Timer0
-	NVIC_Enable(TIMER0_IRQn);		  // Habilitar vector interrupción de timer0
+	NVIC_EnableIRQ(TIMER0_IRQn);		  // Habilitar vector interrupción de timer0
 	return;
 }
 void config_UART3(){ // Configura la UART3
@@ -142,7 +147,7 @@ void config_UART3(){ // Configura la UART3
 	LPC_SC->PCLKSEL1|= (1<<18); // PCLK=CLK/1 (division por 1)
 
 	// Baud rate
-	LPC_UART3->LCR|= DLAB_BIT | 1_STOP_BIT | NO_PARITY_BIT; // 8-bit character length, Enable access to Divisor Latches, 1 Stop bit, no parity bit
+	LPC_UART3->LCR|= DLAB_BIT | ONE_STOP_BIT | NO_PARITY_BIT; // 8-bit character length, Enable access to Divisor Latches, 1 Stop bit, no parity bit
 	LPC_UART3->DLL = 178; // Valores del Divisor Latch para lograr un baud rate de 9600
 	LPC_UART3->DLM = 1;
 
@@ -168,7 +173,7 @@ void config_UART3(){ // Configura la UART3
 	// Pins
 	LPC_PINCON->PINSEL0 |= (1<<1) | (1<<3); // Use P0.0 for Transmitter output & P0.1 for Receveir input in UART3
 	// Interrupts
-	LPC_UART3->IER |= ..; //Edit this if want you to use UART interrupts
+	//LPC_UART3->IER |= ..; //Edit this if want you to use UART interrupts
 
 	return;
 }
@@ -180,7 +185,7 @@ void EINT3_IRQHandler(void){ // Muestra el valor de la hora de la PC si se puls�
 		// Implementar la obtención de la hora y mostrarla por display LCD y UART
 
 	}
-TIM_ResetCounter(LPC_TIM0); // Reseteo el TC del timer0
+        TIM_ResetCounter(LPC_TIM0); // Reseteo el TC del timer0
 	GPIO_ClearInt(PORT_ZERO, PIN_6); // Limpia bandera interrup. de P0.6
 	return;
 }
