@@ -49,6 +49,10 @@ void config_UART3(void); // Configura la UART3
 char U3Read(void); // Verifica que el buffer de lectura esté vacío, lee lo que recibe de la UART3 y lo devuelve como char
 void U3Write(char);// Verifica que el buffer de escritura esté vacío y escribe en la UART3 el char pasado como parámetro
 
+uint8_t	operador;
+uint8_t operando_1;
+uint8_t operando_2;
+
 int main(void) {
 
 	SystemInit();
@@ -77,16 +81,13 @@ int main(void) {
 		 * do{
 		 * U3Write('Inserte la operacion a realizar. Suma: + _ Resta: - _ Multiplicacion: * _ Division: /');
 		 *
-		 * while(!(LPC_UART3->LSR & RDR)); // Espera a que se pulse el operando
-		 * operador = LPC_UART3->RBR;
+		 * operador = U3Read();
 		 *
 		 * U3Write('Inserte los dos operandos. Pulsando 'q' se sale de la calculadora.');
 		 *
-		 * while(!(LPC_UART3->LSR & RDR)); // Espera a que se ingrese el primer operando
-		 * operando_1=LPC_UART3->RBR;
+		 * operando_1=U3Read(); // Espera a que se ingrese el primer operando
 		 *
-		 * while(!(LPC_UART3->LSR & RDR)); // Espera a que se ingrese el segundo operando
-		 * operando_2=LPC_UART3->RBR;
+		 * operando_2=U3Read(); // Espera a que se ingrese el segundo operando
 		 *
 		 * switch(operador){
 		 * 		case '+':
